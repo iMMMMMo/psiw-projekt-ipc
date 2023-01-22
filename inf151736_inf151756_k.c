@@ -14,7 +14,7 @@ void sig_handler(int signum)
 
 }
 
-void handle_server_answer(int id) {
+int handle_server_answer(int id) {
     struct msg queue;
     pause();
     msgrcv(id, &queue, sizeof(queue), getpid(), 0);
@@ -41,8 +41,8 @@ void handle_server_answer(int id) {
 }
 
 int login(int id)
-{`
-    struct msg queue = {0};
+{
+    struct msg queue;
     char buffer[SHORT_TEXT] = "";
     fgets(buffer, sizeof(buffer), stdin);
     buffer[strcspn(buffer, "\r\n" )] = 0;
@@ -52,19 +52,20 @@ int login(int id)
     strcpy(queue.shortText, buffer);
     msgsnd(id, &queue, sizeof(queue), 0);
 
-    return handle_server_answer(id);
+    // turn handle_server_answer(id);
     // pause();
     // struct msg mess;
+    // printf("Czekam na odpowiedz serwera!\n");
     // msgrcv(id, &mess, sizeof(mess), getpid(), 0);
-    // printf("%s\n", mess.shortText);
-    // if (mess.sub_type == 0) {
+    // printf("Otrymalem:%d\n", mess.sender);
+    // if (mess.sender == 0) {
     //     printf("Zalogowano.\n");
     //     return 0; // udana proba zalogowania
     // }
-    // else if(mess.sub_type == 1)
-    //     printf("Użytkownik o podanym nicku nie istnieje!"\n);
-    // else if(mess.sub_type == 2)
-    //     printf("Użytkownik o podanym nicku jest już zalogowany!"\n);
+    // else if(mess.sender == 1)
+    //     printf("Użytkownik o podanym nicku nie istnieje!\n");
+    // else if(mess.sender == 2)
+    //     printf("Użytkownik o podanym nicku jest już zalogowany!\n");
     // return 1; // nieudana proba zalogowania
 }
 
@@ -75,8 +76,8 @@ int logout(int id)
     queue.sub_type = 2; // komunikat 2 - proba wylogowania
     queue.sender = getpid();
     msgsnd(id, &queue, sizeof(queue), 0);
-
-    return handle_server_answer(id)
+    return 0;
+    // return handle_server_answer(id);
 }
 
 int main()
@@ -100,18 +101,18 @@ int main()
     }
     while(login(msg_id));
 
-    printf("Dostepne opcje:\n");
-    printf("0 -- wyloguj");
-    while(logged)
-    {
-        scanf("%i", choice);
-        switch(choice) {
-            case 0:
-                logout(msg_id);
-                logged = 0;
-                break;
-            default:
-                printf("Wybrano nieistniejaca opcje!\n")
-        }
-    }
+    // printf("Dostepne opcje:\n");
+    // printf("0 -- wyloguj");
+    // while(logged)
+    // {
+    //     scanf("%d", &choice);
+    //     switch(choice) {
+    //         case 0:
+    //             logout(msg_id);
+    //             logged = 0;
+    //             break;
+    //         default:
+    //             printf("Wybrano nieistniejaca opcje!\n");
+    //     }
+    // }
 }

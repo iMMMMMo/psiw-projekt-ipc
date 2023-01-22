@@ -13,27 +13,30 @@ char* users[USERS_LIMIT] = {"mateusz", "adam", "rafal"};
 char* groups[GROUPS_LIMIT] = {"labowa", "cwiczeniowa"};
 char* active_users[USERS_LIMIT] = {"rafal"};
 
-int in_list(char* str, char* list) // 1 jeśli jest 0 jeśli nie ma
+int in_list(char* str, char** list) // 1 jeśli jest 0 jeśli nie ma
 {
     for (int i=0; i<sizeof(list)/sizeof(char*); i++)
     {
+        printf("ile w liscie imion: %ld\n", sizeof(list)/sizeof(char*));
+        printf("%s vs %s\n", str, list[i]);
         if (strcmp(list[i], str)==0)
             return 1;
     }
     return 0;
 }
 
-void handle_login(int pid, char* username, char* accounts, char* active)
+void handle_login(int id, int pid, char* username, char* accounts[], char* active[])
 {
     struct msg tmp; // usunać
     tmp.msg_type = pid;
     if (in_list(username, active))
-        tmp.sender = 2;
+        tmp.sender = 2; // juz zalogowany
     else if (in_list(username, accounts))
-        tmp.sender = 0;
+        tmp.sender = 0; // sukces
     else
-        tmp.sender = 1;
-    msgsnd(pid, &tmp, sizeof(tmp), 0);
+        tmp.sender = 1; // nie istnieje
+    printf("Wysylam: %d\n.", tmp.sender);
+    msgsnd(id, &tmp, sizeof(tmp), 0);
 }
 
 // void success_message(int id, int pid, char* content) {
@@ -56,10 +59,12 @@ int main() {
     int msg_id = msgget(76, 0666|IPC_CREAT);
 
     while(1) {
+        printf("Odbieram!\n");
         msgrcv(msg_id, &public_queue, sizeof(public_queue), 1, 0);
+        printf("Odebralem: %s.\n", public_queue.shortText);
         if(public_queue.sub_type == 1)
         {
-            handle_login(public_queue.sender, public_queue.shortText, users, active_users);
+            handle_login(msg_id, public_queue.sender, public_queue.shortText, users, active_users);
         // printf("\nOdebrano: %s", public_queue.shortText);
         // if (public_queue.sub_type == 1) {
         //     if (check_user==1)
@@ -70,6 +75,5 @@ int main() {
             kill(public_queue.sender, SIGALRM);
         }
     }
-
     msgctl(msg_id, IPC_RMID, 0);
 }
