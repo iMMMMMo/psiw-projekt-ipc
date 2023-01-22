@@ -13,42 +13,61 @@ char* users[USERS_LIMIT] = {"mateusz", "adam", "rafal"};
 char* groups[GROUPS_LIMIT] = {"labowa", "cwiczeniowa"};
 char* active_users[USERS_LIMIT] = {"rafal"};
 
-int in_list(char* str, char* list) // 1 jeśli jest 0 jeśli nie ma
+int in_list(char* str, char** list) // 1 jeśli jest 0 jeśli nie ma
 {
-    for (int i=0; i<sizeof(list)/sizeof(char*); i++)
+    int i=0;
+    while (list[i])
     {
         if (strcmp(list[i], str)==0)
             return 1;
+        i++;
     }
     return 0;
 }
 
-void handle_login(int pid, char* username, char* accounts, char* active)
+void handle_login(int id, int pid, char* username, char* accounts[], char* active[])
 {
-    struct msg tmp; // usunać
-    tmp.msg_type = pid;
+    struct msg queue; // usunać
+    queue.msg_type = pid;
     if (in_list(username, active))
-        tmp.sender = 2;
+        queue.sender = 2; // juz zalogowany
     else if (in_list(username, accounts))
-        tmp.sender = 0;
+        queue.sender = 0; // sukces
+        add_active_user()
     else
-        tmp.sender = 1;
-    msgsnd(pid, &tmp, sizeof(tmp), 0);
+        queue.sender = 1; // nie istnieje
+    printf("Wysylam: %d\n.", queue.sender);
+    msgsnd(id, &queue, sizeof(queue), 0);
 }
 
-// void success_message(int id, int pid, char* content) {
-//     struct msg message;
-//     message.msg_type = pid;
-//     message.sub_type = 0; // nr komunikatu 0 - sukces 1 - nie istnieje 2 - juz zalogowany
-//     msgsnd(id, &message, sizeof(message), 0);
-// }
+void handle_logout(int id, int pid, char* accounts[], char* active[])
+{
+    struct msg queue;
+    queue.msg_type = pid;
+    queue.sender = 3;
 
-// void error_message(int id, int pid, char* content) {
-//     struct msg message;
-//     message.msg_type = pid;
-//     message.sub_type = -1; // nr komunikatu -1 - error
-//     msgsnd(id, &message, sizeof(message), 0);
-// }
+    printf("Wysylam: %d\n.", queue.sender);
+    msgsnd(id, &queue, sizeof(queue), 0);
+}
+
+void handle_list_of_users(int id, int pid, char* accounts[])
+{
+    struct msg queue;
+    queue.msg_type = pid;
+    queue.sender = 4;
+
+    int i=0;
+    // int position = 0;
+    while (accounts[i])
+    {
+        // strncpy(queue.longText + position, accounts[i], sizeof(char)*64);
+        // position += 64;
+        // dodac accounts[i]+\n do queue.longText
+        i++;
+    }
+    printf("Wysylam: %d\n.", queue.sender);
+    msgsnd(id, &queue, sizeof(queue), 0);
+}
 
 int main() {
 
@@ -57,19 +76,23 @@ int main() {
 
     while(1) {
         msgrcv(msg_id, &public_queue, sizeof(public_queue), 1, 0);
-        if(public_queue.sub_type == 1)
+
+        if (public_queue.sub_type == 1)
         {
-            handle_login(public_queue.sender, public_queue.shortText, users, active_users);
-        // printf("\nOdebrano: %s", public_queue.shortText);
-        // if (public_queue.sub_type == 1) {
-        //     if (check_user==1)
-        //         success_message(msg_id, public_queue.sender, "Pomyslnie zalogowano");
-        //     else
-        //         error_message(msg_id, public_queue.sender, "Podany uzytkownik nie istnieje");
-
-            kill(public_queue.sender, SIGALRM);
+            printf("Odebralem: %s.\n", public_queue.shortText);
+            handle_login(msg_id, public_queue.sender, public_queue.shortText, users, active_users);
         }
+        else if (public_queue.sub_type == 2)
+        {
+            printf("Odebralem: %d.\n", public_queue.sub_type);
+            handle_logout(msg_id, public_queue.sender, users, active_users);
+        }
+        else if (public_queue.sub_type == 3)
+        {
+            printf("Odebralem: %d.\n", public_queue.sub_type);
+            handle_list_of_users(msg_id, public_queue.sender, users);
+        }
+        kill(public_queue.sender, SIGALRM);
     }
-
     msgctl(msg_id, IPC_RMID, 0);
 }
