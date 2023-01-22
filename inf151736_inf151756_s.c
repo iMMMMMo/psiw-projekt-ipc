@@ -9,54 +9,64 @@
 #include <string.h>
 #include <signal.h>
 
-char* users[] = {"mateusz", "adam", "rafal"};
-char* groups[] = {"labowa", "cwiczeniowa"};
+char* users[USERS_LIMIT] = {"mateusz", "adam", "rafal"};
+char* groups[GROUPS_LIMIT] = {"labowa", "cwiczeniowa"};
+char* active_users[USERS_LIMIT] = {"rafal"};
 
-void success_message(int id, int user, char* content) {
-    struct msg message;
-    message.msg_type = user;
-    message.sub_type = 0; // nr komunikatu 0 - sukces
-    strcpy(message.shortText, content);
-
-    msgsnd(id, &message, sizeof(message), 0);
+int in_list(char* str, char* list) // 1 jeśli jest 0 jeśli nie ma
+{
+    for (int i=0; i<sizeof(list)/sizeof(char*); i++)
+    {
+        if (strcmp(list[i], str)==0)
+            return 1;
+    }
+    return 0;
 }
 
-void error_message(int id, int user, char* content) {
-    struct msg message;
-    message.msg_type = user;
-    message.sub_type = -1; // nr komunikatu -1 - error
-    strcpy(message.shortText, content);
-
-    msgsnd(id, &message, sizeof(message), 0);
+void handle_login(int pid, char* username, char* accounts, char* active)
+{
+    struct msg tmp; // usunać
+    tmp.msg_type = pid;
+    if (in_list(username, active))
+        tmp.sender = 2;
+    else if (in_list(username, accounts))
+        tmp.sender = 0;
+    else
+        tmp.sender = 1;
+    msgsnd(pid, &tmp, sizeof(tmp), 0);
 }
+
+// void success_message(int id, int pid, char* content) {
+//     struct msg message;
+//     message.msg_type = pid;
+//     message.sub_type = 0; // nr komunikatu 0 - sukces 1 - nie istnieje 2 - juz zalogowany
+//     msgsnd(id, &message, sizeof(message), 0);
+// }
+
+// void error_message(int id, int pid, char* content) {
+//     struct msg message;
+//     message.msg_type = pid;
+//     message.sub_type = -1; // nr komunikatu -1 - error
+//     msgsnd(id, &message, sizeof(message), 0);
+// }
 
 int main() {
+
     struct msg public_queue;
     int msg_id = msgget(76, 0666|IPC_CREAT);
-    if (msg_id == -1)
-    {
-        printf("Error in creating queue\n");
-        exit(0);
-    }
-    int check_user = 0;
-    msgrcv(msg_id, &public_queue, sizeof(public_queue), 0, 0);
-    // nr komunikatu 1 - probwa logowania
-    while(1) {
-        if (public_queue.sub_type == 1) {
-            for (int i=0; i<sizeof(users)/sizeof(char*); i++) {
-                if (strcmp(users[i], public_queue.shortText)==0) {
-                    check_user = 1;
-                    printf("YES");
-                    break;
-                }
-            }
-            if (check_user) {
-                success_message(msg_id, public_queue.sender, "Pomyslnie zalogowano");
 
-            }
-            else {
-                error_message(msg_id, public_queue.sender, "Podany uzytkownik nie istnieje");
-            }
+    while(1) {
+        msgrcv(msg_id, &public_queue, sizeof(public_queue), 1, 0);
+        if(public_queue.sub_type == 1)
+        {
+            handle_login(public_queue.sender, public_queue.shortText, users, active_users);
+        // printf("\nOdebrano: %s", public_queue.shortText);
+        // if (public_queue.sub_type == 1) {
+        //     if (check_user==1)
+        //         success_message(msg_id, public_queue.sender, "Pomyslnie zalogowano");
+        //     else
+        //         error_message(msg_id, public_queue.sender, "Podany uzytkownik nie istnieje");
+
             kill(public_queue.sender, SIGALRM);
         }
     }
