@@ -59,19 +59,7 @@ int login(int id)
     msgsnd(id, &queue, sizeof(queue), 0);
 
     return handle_server_answer(id);
-    // pause();
-    // struct msg mess;
-    // msgrcv(id, &mess, sizeof(mess), getpid(), 0);
-    // printf("%s\n", mess.shortText);
-    // if (mess.sub_type == 0) {
-    //     printf("Zalogowano.\n");
-    //     return 0; // udana proba zalogowania
-    // }
-    // else if(mess.sub_type == 1)
-    //     printf("Użytkownik o podanym nicku nie istnieje!"\n);
-    // else if(mess.sub_type == 2)
-    //     printf("Użytkownik o podanym nicku jest już zalogowany!"\n);
-    // return 1; // nieudana proba zalogowania
+
 }
 
 int logout(int id)
@@ -81,8 +69,17 @@ int logout(int id)
     queue.sub_type = 2; // komunikat 2 - proba wylogowania
     queue.sender = getpid();
     msgsnd(id, &queue, sizeof(queue), 0);
+    return handle_server_answer(id);
+}
 
-    return handle_server_answer(id)
+int print_list_of_users(int id)
+{
+    struct msg queue;
+    queue.msg_type = 1;
+    queue.sub_type = 3; // komunikat 3 - lista uzytkownikow
+    queue.sender = getpid();
+    msgsnd(id, &queue, sizeof(queue), 0);
+    return handle_server_answer(id);
 }
 
 int main()
@@ -107,17 +104,23 @@ int main()
     while(login(msg_id));
 
     printf("Dostepne opcje:\n");
-    printf("0 -- wyloguj");
+    printf("0 -- wyloguj\n");
+    printf("1 -- wyswietl liste zalogowanych uzytkownikow\n");
+
     while(logged)
     {
-        scanf("%i", choice);
+        scanf("%d", &choice);
         switch(choice) {
             case 0:
                 logout(msg_id);
                 logged = 0;
                 break;
+            case 1:
+                print_list_of_users(msg_id);
+                break;
+
             default:
-                printf("Wybrano nieistniejaca opcje!\n")
+                printf("Wybrano nieistniejaca opcje!\n");
         }
     }
 }
