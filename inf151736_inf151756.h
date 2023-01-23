@@ -12,3 +12,10 @@ struct msg
     char shortText[SHORT_TEXT];
     char longText[LONG_TEXT];
 };
+struct user
+{
+    char username[SHORT_TEXT];
+    int pid;
+    char group[GROUPS_LIMIT][SHORT_TEXT];
+    int number_of_groups;
+};
