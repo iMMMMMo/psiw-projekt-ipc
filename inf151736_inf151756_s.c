@@ -28,7 +28,7 @@ void add_group(char* name)
     CURRENT_GROUPS++;
 }
 
-void add_active_user(int _pid, char* _username) 
+void add_active_user(int _pid, char* _username)
 {
     for(int i=0; i<CURRENT_USERS; i++)
     {
@@ -51,22 +51,24 @@ void delete_active_user(int _pid)
     }
 }
 
-char* get_username(int _pid) 
+char* get_username(int _pid)
 {
     for (int i=0; i<CURRENT_USERS; i++)
     {
         if (users[i].pid == _pid)
             return users[i].username;
     }
+    return "";
 }
 
 int get_pid (char* _username)
 {
     for (int i=0; i<CURRENT_USERS; i++)
     {
-        if (strcmp(users[i].username, _username))
+        if (strcmp(users[i].username, _username) == 0)
             return users[i].pid;
     }
+    return 0;
 }
 
 int in_list(char* name) // 1 jeśli jest 0 jeśli nie ma
@@ -88,15 +90,15 @@ void handle_login(int id, int pid, char* username)
 {
     struct msg queue; // usunać
     queue.msg_type = pid;
-    
+
     if (in_list(username) == 2)
     {
-        queue.sender = 1; // nie istnieje 
+        queue.sender = 1; // nie istnieje
         printf("Kod %d: Użytkownik %s nie istnieje.\n", queue.sender, username);
     }
     else if (in_list(username) == 1)
     {
-        queue.sender = 2; // juz zalogowany 
+        queue.sender = 2; // juz zalogowany
         printf("Kod %d: Użytkownik %s jest już zalogowany.\n", queue.sender, username);
     }
     else
@@ -105,7 +107,7 @@ void handle_login(int id, int pid, char* username)
         add_active_user(pid, username);
         printf("Kod %d: Zalogowano użytkownika %s.\n", queue.sender, username);
     }
-        
+
     msgsnd(id, &queue, sizeof(queue), 0);
 }
 
@@ -140,30 +142,6 @@ void handle_list_of_users(int id, int pid)
     msgsnd(id, &queue, sizeof(queue), 0);
 }
 
-void handle_users_of_group(int id, int pid, char* group_name)
-{
-    struct msg queue;
-    queue.msg_type = pid;
-    queue.sender = 5;
-
-    char tmp[LONG_TEXT] = "";
-    for(int i=0; i<CURRENT_USERS; i++)
-    {
-        for (int j=0; j<users[i].number_of_groups; j++) 
-        {
-            if (strcmp(users[i].group[j], group_name) == 0)
-            {
-                strcat(tmp, users[i].username);
-                strcat(tmp, "\n");
-            }
-        }
-    }
-    strcpy(queue.longText, tmp);
-    printf("Kod %d: Wysłano listę użytkowników grupy %s\n", queue.sender, group_name);
-    msgsnd(id, &queue, sizeof(queue), 0);
-}
-
-
 int check_group(char* group_name)
 {
     for (int i=0; i<CURRENT_GROUPS; i++)
@@ -180,7 +158,7 @@ int check_if_user_in_group(int pid, char* group_name)
     {
         if (users[i].pid == pid)
         {
-            for (int j=0; j<users[i].number_of_groups; j++) 
+            for (int j=0; j<users[i].number_of_groups; j++)
             {
                 if (strcmp(users[i].group[j], group_name)==0)
                 {
@@ -191,11 +169,46 @@ int check_if_user_in_group(int pid, char* group_name)
     }
     return 0;
 }
+
+void handle_users_of_group(int id, int pid, char* group_name)
+{
+    struct msg queue;
+    queue.msg_type = pid;
+
+    if (!check_group(group_name))
+    {
+        queue.sender = 6;
+        printf("Kod %d: Grupa %s nie istnieje.\n", queue.sender, group_name);
+        msgsnd(id, &queue, sizeof(queue), 0);
+    }
+    else
+    {
+        char tmp[LONG_TEXT] = "";
+        for(int i=0; i<CURRENT_USERS; i++)
+        {
+            for (int j=0; j<users[i].number_of_groups; j++)
+            {
+                if (strcmp(users[i].group[j], group_name) == 0)
+                {
+                    strcat(tmp, users[i].username);
+                    strcat(tmp, "\n");
+                }
+            }
+        }
+        strcpy(queue.longText, tmp);
+        queue.sender = 5;
+        printf("Kod %d: Wysłano listę użytkowników grupy %s\n", queue.sender, group_name);
+        msgsnd(id, &queue, sizeof(queue), 0);
+    }
+}
+
+
+
 void handle_joining_group(int id, int pid, char* group_name)
 {
     struct msg queue;
     queue.msg_type = pid;
-    
+
     if (check_group(group_name))
     {
         for (int i=0; i<CURRENT_USERS; i++)
@@ -315,16 +328,16 @@ void handle_mess_for_group(int id, int pid, char* group_name, char* content)
             if (check_if_user_in_group(users[i].pid, group_name))
             {
                 queue.msg_type = users[i].pid;
-                queue.sender = 15;
+                queue.sender = 14;
                 printf("Kod %d: Użytkownik %s wysłał wiadomość do %s.\n", queue.sender, get_username(pid), get_username(users[i].pid));
                 kill(users[i].pid, SIGINT);
-                msgsnd(id, &queue, sizeof(queue), 0); 
+                msgsnd(id, &queue, sizeof(queue), 0);
             }
         }
     }
     queue.msg_type = pid;
     queue.sender = 12;
-    msgsnd(id, &queue, sizeof(queue), 0);  
+    msgsnd(id, &queue, sizeof(queue), 0);
 }
 
 int check_user(char* _username)
@@ -342,15 +355,15 @@ void handle_mess_for_user(int id, int pid, char* username, char* content)
     struct msg queue;
     if (!check_user(username))
     {
-        queue.sender = 13;
+        queue.sender = 1;
         printf("Kod %d: Użytkownik %s  nie istnieje.\n", queue.sender, username);
         msgsnd(id, &queue, sizeof(queue), 0);
     }
     else
     {
-        queue.sender = 15;
+        queue.sender = 14;
         queue.msg_type = get_pid(username);
-        strcpy(queue.shortText, username);
+        strcpy(queue.shortText, get_username(pid));
         char tmp[LONG_TEXT] = "";
         strcat(tmp, content);
         strcat(tmp, "\n");
@@ -360,8 +373,8 @@ void handle_mess_for_user(int id, int pid, char* username, char* content)
         msgsnd(id, &queue, sizeof(queue), 0);
     }
     queue.msg_type = pid;
-    queue.sender = 14;
-    msgsnd(id, &queue, sizeof(queue), 0); 
+    queue.sender = 13;
+    msgsnd(id, &queue, sizeof(queue), 0);
 }
 int main() {
 
@@ -416,32 +429,32 @@ int main() {
             printf("Odebralem: %d.\n", public_queue.sub_type);
             handle_list_of_users(msg_id, public_queue.sender);
         }
-        else if (public_queue.sub_type == 4) 
+        else if (public_queue.sub_type == 4)
         {
             printf("Odebralem: %d.\n", public_queue.sub_type);
             handle_users_of_group(msg_id, public_queue.sender, public_queue.shortText);
         }
-        else if (public_queue.sub_type == 5) 
+        else if (public_queue.sub_type == 5)
         {
             printf("Odebralem: %d.\n", public_queue.sub_type);
             handle_joining_group(msg_id, public_queue.sender, public_queue.shortText);
         }
-        else if (public_queue.sub_type == 6) 
+        else if (public_queue.sub_type == 6)
         {
             printf("Odebralem: %d.\n", public_queue.sub_type);
             handle_leaving_group(msg_id, public_queue.sender, public_queue.shortText);
         }
-        else if (public_queue.sub_type == 7) 
+        else if (public_queue.sub_type == 7)
         {
             printf("Odebralem: %d.\n", public_queue.sub_type);
             handle_list_of_groups(msg_id, public_queue.sender);
         }
-        else if (public_queue.sub_type == 8) 
+        else if (public_queue.sub_type == 8)
         {
             printf("Odebralem: %d.\n", public_queue.sub_type);
             handle_mess_for_group(msg_id, public_queue.sender, public_queue.shortText, public_queue.longText);
         }
-        else if (public_queue.sub_type == 9) 
+        else if (public_queue.sub_type == 9)
         {
             printf("Odebralem: %d.\n", public_queue.sub_type);
             handle_mess_for_user(msg_id, public_queue.sender, public_queue.shortText, public_queue.longText);

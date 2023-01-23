@@ -16,10 +16,10 @@ void sig_handler(int signum)
     {
         struct msg queue;
         msgrcv(msgget(76, 0666), &queue, sizeof(queue), getpid(), 0);
-        if (queue.sender == 15)
+        if (queue.sender == 14)
         {
-            printf("Otrzymałeś wiadomość od: %s!\n", queue.shortText);
-            printf("%s", queue.longText);
+            printf("Otrzymałeś wiadomość od: %s\n", queue.shortText);
+            printf("Treść: %s", queue.longText);
         }
     }
 }
@@ -58,7 +58,7 @@ int handle_server_answer(int id)
             printf("Brak!\n");
         return 0;
     }
-    else if (queue.sender == 5) 
+    else if (queue.sender == 5)
     {
         printf("Lista użytkowników zapisanych do grupy: \n");
         if (strlen(queue.longText) > 0)
@@ -67,32 +67,32 @@ int handle_server_answer(int id)
             printf("Brak!\n");
         return 0;
     }
-    else if (queue.sender == 6) 
+    else if (queue.sender == 6)
     {
         printf("Grupa o podanej nazwie nie istnieje.\n");
         return 1;
     }
-    else if (queue.sender == 7) 
+    else if (queue.sender == 7)
     {
         printf("Juz jesteś w tej grupie.\n");
         return 0;
     }
-    else if (queue.sender == 8) 
+    else if (queue.sender == 8)
     {
         printf("Pomyślnie dołączono do grupy.\n");
         return 0;
     }
-    else if (queue.sender == 9) 
+    else if (queue.sender == 9)
     {
         printf("Nie jesteś w tej grupie.\n");
         return 1;
     }
-    else if (queue.sender == 10) 
+    else if (queue.sender == 10)
     {
         printf("Opuszczono grupę.\n");
         return 0;
     }
-    else if (queue.sender == 11) 
+    else if (queue.sender == 11)
     {
         printf("Lista dostępnych grup:\n");
         if (strlen(queue.longText) > 0)
@@ -101,17 +101,12 @@ int handle_server_answer(int id)
             printf("Brak!\n");
         return 0;
     }
-    else if (queue.sender == 12) 
+    else if (queue.sender == 12)
     {
         printf("Wysłano wiadomość do grupy.\n");
         return 0;
     }
-    else if (queue.sender == 13) 
-    {
-        printf("Podany użytkownik nie istnieje.\n");
-        return 1;
-    }
-    else if (queue.sender == 14)
+    else if (queue.sender == 13)
     {
         printf("Wysłano wiadomość do użytkownika.\n");
         return 0;
@@ -166,7 +161,7 @@ int print_users_of_group(int id, char* group_name)
     return handle_server_answer(id);
 }
 
-int join_group(int id, char* group_name) 
+int join_group(int id, char* group_name)
 {
     struct msg queue;
     queue.msg_type = 1;
@@ -177,7 +172,7 @@ int join_group(int id, char* group_name)
     return handle_server_answer(id);
 }
 
-int leave_group(int id, char* group_name) 
+int leave_group(int id, char* group_name)
 {
     struct msg queue;
     queue.msg_type = 1;
