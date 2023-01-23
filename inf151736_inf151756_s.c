@@ -263,12 +263,12 @@ void handle_leaving_group(int id, int pid, char* group_name)
                 {
                     if (strcmp(users[i].group[j], group_name)==0)
                     {
-                        users[i].number_of_groups--;
-                        for (int k=j-1; k<users[i].number_of_groups-1; k++)
+                        for (int k=j; k<users[i].number_of_groups-1; k++)
                         {
                             strcpy(users[i].group[k], "");
                             strcpy(users[i].group[k], users[i].group[k+1]);
                         }
+                        users[i].number_of_groups--;
                     }
                 }
             }
@@ -330,7 +330,7 @@ void handle_mess_for_group(int id, int pid, char* group_name, char* content)
                 queue.msg_type = users[i].pid;
                 queue.sender = 14;
                 printf("Kod %d: Użytkownik %s wysłał wiadomość do %s.\n", queue.sender, get_username(pid), get_username(users[i].pid));
-                kill(users[i].pid, SIGINT);
+                kill(users[i].pid, SIGUSR1);
                 msgsnd(id, &queue, sizeof(queue), 0);
             }
         }
@@ -369,7 +369,7 @@ void handle_mess_for_user(int id, int pid, char* username, char* content)
         strcat(tmp, "\n");
         strcpy(queue.longText, tmp);
         printf("Kod %d: Użytkownik %s wysłał wiadomość do %s.\n", queue.sender, get_username(pid), username);
-        kill(get_pid(username), SIGINT);
+        kill(get_pid(username), SIGUSR1);
         msgsnd(id, &queue, sizeof(queue), 0);
     }
     queue.msg_type = pid;

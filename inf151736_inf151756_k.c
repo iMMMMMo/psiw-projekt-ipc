@@ -12,7 +12,7 @@
 
 void sig_handler(int signum)
 {
-    if (signum == SIGINT)
+    if (signum == SIGUSR1)
     {
         struct msg queue;
         msgrcv(msgget(76, 0666), &queue, sizeof(queue), getpid(), 0);
@@ -221,7 +221,7 @@ int main()
 {
     int msg_id = msgget(76, 0666);
     signal(SIGALRM, sig_handler);
-    signal(SIGINT, sig_handler);
+    signal(SIGUSR1, sig_handler);
     int logged = 1;
     int choice;
     if (msg_id == -1)
